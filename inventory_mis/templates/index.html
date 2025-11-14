@@ -1,0 +1,133 @@
+<!-- ims_project/templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMS Welcome</title>
+    <!-- We'll use a CDN for a simple CSS framework like Bootstrap or Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="container mx-auto">
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-3xl font-bold">Hello, {{ user.username }} 👋</h1>
+            <div class="space-x-3">
+                <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg">Go to Dashboard</a>
+                <a href="{% url 'logout' %}" class="px-4 py-2 bg-red-50 text-red-600 rounded-lg">Logout</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <a href="{% url 'products' %}" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 block">
+                <h2 class="text-xl font-semibold mb-2">Products</h2>
+                <p class="text-gray-600">Create and manage products.</p>
+            </a>
+            <a href="{% url 'vendors' %}" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 block">
+                <h2 class="text-xl font-semibold mb-2">Vendors</h2>
+                <p class="text-gray-600">Manage suppliers.</p>
+            </a>
+            <a href="{% url 'customers' %}" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 block">
+                <h2 class="text-xl font-semibold mb-2">Customers</h2>
+                <p class="text-gray-600">Manage customers.</p>
+            </a>
+            <a href="{% url 'inventory' %}" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 block">
+                <h2 class="text-xl font-semibold mb-2">Inventory</h2>
+                <p class="text-gray-600">View stock levels.</p>
+            </a>
+        </div>
+
+        <form method="get" class="mb-6">
+            <div class="relative max-w-md">
+                <input type="text" name="q" value="{{ q }}" placeholder="Search inventory by product name" class="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute left-3 top-2.5 text-gray-400"><i class="fas fa-search"></i></span>
+            </div>
+        </form>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-xl font-semibold mb-2">Total Products</h2>
+                <p class="text-3xl font-bold text-indigo-600">{{ total_products }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-xl font-semibold mb-2">Total Quantity</h2>
+                <p class="text-3xl font-bold text-indigo-600">{{ total_quantity }}</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-xl font-semibold mb-2">Low Stock (≤ {{ low_stock_threshold }})</h2>
+                <p class="text-3xl font-bold text-red-600">{{ low_stock_count }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+            <h2 class="text-2xl font-semibold mb-4">Current Inventory</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6 text-left">Product</th>
+                            <th class="py-3 px-6 text-left">Stock Level</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light">
+                        {% for item in inventory_items %}
+                        <tr class="border-b border-gray-200 hover:bg-gray-100">
+                            <td class="py-3 px-6 text-left whitespace-nowrap">{{ item.product.title }}</td>
+                            <td class="py-3 px-6 text-left">
+                                {% if item.total_balance_quantity <= low_stock_threshold %}
+                                <span class="bg-red-200 text-red-600 py-1 px-3 rounded-full text-xs">Low Stock</span>
+                                {% else %}
+                                <span class="bg-green-200 text-green-600 py-1 px-3 rounded-full text-xs">In Stock</span>
+                                {% endif %}
+                                {{ item.total_balance_quantity }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="py-3 px-6 text-center text-gray-500">No inventory found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Recent Purchases -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4">Recent Purchases</h2>
+                <ul>
+                    {% for purchase in recent_purchases %}
+                    <li class="py-2 border-b border-gray-200 last:border-0">
+                        Purchased {{ purchase.quantity }} of {{ purchase.product.title }} from {{ purchase.vendor.full_name }}
+                    </li>
+                    {% empty %}
+                    <li class="text-gray-500">No recent purchases.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <!-- Recent Sales -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold mb-4">Recent Sales</h2>
+                <ul>
+                    {% for sale in recent_sales %}
+                    <li class="py-2 border-b border-gray-200 last:border-0">
+                        Sold {{ sale.quantity }} of {{ sale.product.title }} to {{ sale.customer.customer_name }}
+                    </li>
+                    {% empty %}
+                    <li class="text-gray-500">No recent sales.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
